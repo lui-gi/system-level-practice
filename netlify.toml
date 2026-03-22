@@ -3,6 +3,9 @@
   publish   = "client/dist"
   functions = "netlify/functions"
 
+[functions]
+  included_files = ["resources/**", "slides/**"]
+
 [build.environment]
   NODE_VERSION = "20"
 

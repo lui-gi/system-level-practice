@@ -1,11 +1,10 @@
 import { Router } from "express";
 import { readdir, readFile } from "fs/promises";
 import { join, basename, extname } from "path";
-import { fileURLToPath } from "url";
 
 export const resourcesRouter = Router();
 
-const RESOURCES_DIR = join(fileURLToPath(import.meta.url), "../../../../resources");
+const RESOURCES_DIR = join(process.cwd(), "resources");
 
 // GET /api/resources — list all available .html resource files
 resourcesRouter.get("/", async (_req, res) => {

@@ -1,11 +1,10 @@
 import { Router } from "express";
 import { readdir, readFile } from "fs/promises";
 import { join, extname } from "path";
-import { fileURLToPath } from "url";
 
 export const slidesRouter = Router();
 
-const SLIDES_DIR = join(fileURLToPath(import.meta.url), "../../../../slides");
+const SLIDES_DIR = join(process.cwd(), "slides");
 
 // GET /api/slides — list all available PDF slide decks
 slidesRouter.get("/", async (_req, res) => {
