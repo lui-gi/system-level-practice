@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
+import { ArrowRight } from "lucide-react";
 
 type SlideMeta = { filename: string };
 
@@ -18,32 +19,36 @@ export default function SlidesPage() {
   }, [filename]);
 
   return (
-    <main className="min-h-screen bg-background p-8 max-w-5xl mx-auto">
-      <Link
-        to="/"
-        className="text-sm text-muted-foreground hover:text-foreground mb-6 inline-block"
-      >
-        Back to home
-      </Link>
-
+    <main className="mx-auto max-w-5xl px-8 py-16">
       {!filename ? (
         <>
-          <h1 className="text-3xl font-bold mb-6">Lecture Slides</h1>
-          {error && <p className="text-destructive mb-4">{error}</p>}
+          <h1 className="mb-1 text-3xl font-semibold tracking-tight text-foreground">
+            Lecture Slides
+          </h1>
+          <p className="mb-10 text-sm text-muted-foreground">
+            Select a deck to view.
+          </p>
+
+          {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
+
           {slides.length === 0 && !error ? (
-            <div className="rounded-lg border border-border p-6 text-center text-muted-foreground">
-              No slides found. Add <code>.pdf</code> files to the{" "}
-              <code>slides/</code> folder.
-            </div>
+            <p className="text-sm text-muted-foreground">
+              No slides yet. Add{" "}
+              <code className="font-mono text-xs">.pdf</code> files to the{" "}
+              <code className="font-mono text-xs">slides/</code> folder.
+            </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="divide-y divide-border">
               {slides.map((s) => (
                 <li key={s.filename}>
                   <Link
                     to={`/slides/${s.filename}`}
-                    className="block rounded-md border border-border px-4 py-3 hover:bg-accent transition-colors font-mono text-sm"
+                    className="group flex items-center justify-between py-3 transition-colors hover:text-primary"
                   >
-                    {s.filename}
+                    <span className="font-mono text-sm text-foreground group-hover:text-primary">
+                      {s.filename}
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                   </Link>
                 </li>
               ))}
@@ -52,26 +57,28 @@ export default function SlidesPage() {
         </>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-6 flex items-center justify-between">
             <Link
               to="/slides"
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Back to slides list
+              ← All slides
             </Link>
             <a
               href={`/api/slides/${filename}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-muted-foreground hover:text-foreground"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Open in new tab
+              Open in new tab ↗
             </a>
           </div>
-          <h1 className="text-2xl font-bold mb-4 font-mono">{filename}</h1>
+          <h1 className="mb-6 font-mono text-2xl font-semibold text-foreground">
+            {filename}
+          </h1>
           <iframe
             src={`/api/slides/${filename}`}
-            className="w-full rounded-lg border border-border"
+            className="w-full rounded border border-border"
             style={{ height: "80vh" }}
             title={filename}
           />

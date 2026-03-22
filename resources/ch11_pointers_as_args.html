@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pointers as Arguments &amp; Return Values</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge badge-ch11">Chapter 11</span>
+    <div class="qz-title">Pointers as Arguments &amp; Return Values</div>
+    <div class="qz-desc">Pass-by-pointer, swap, <code>const</code> qualifier, return pointer safety</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px;
+    color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .badge-ch11, .badge-ch12, .badge-ch13 { /* all chapters same neutral style */ }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em;
+    margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem;
+    padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  /* MCQ buttons */
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%);
+    font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct  { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong    { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  /* Textarea */
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  /* Submit & results */
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem;
+    margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem;
+    font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong    { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "A correct <code>swap</code> function is called as <code>swap(&amp;x, &amp;y)</code> where <code>x=1</code> and <code>y=2</code>. What are the values of <code>x</code> and <code>y</code> after the call?",
+    options: ["A) x=1, y=2", "B) x=1, y=1", "C) x=2, y=1", "D) x=2, y=2"],
+    answer: "C) x=2, y=1",
+    explanation: "Passing <code>&x</code> and <code>&y</code> gives the function pointers to the originals. The swap dereferences them to exchange values, so <code>x</code> becomes 2 and <code>y</code> becomes 1."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Given <code>void f(const int *p)</code>, which operation is legal inside <code>f</code>?",
+    options: ["A) *p = 0", "B) p = &j", "C) p++", "D) (*p)++"],
+    answer: "B) p = &j",
+    explanation: "<code>const int *p</code> means the <em>pointed-to value</em> is read-only — you cannot modify <code>*p</code>. But the pointer variable <code>p</code> itself is not const, so reassigning <code>p</code> to point elsewhere (e.g., <code>p = &j</code>) is legal."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "Given <code>void f(int * const p)</code>, which operation is legal inside <code>f</code>?",
+    options: ["A) p = &j", "B) *p = 5", "C) p++", "D) p = NULL"],
+    answer: "B) *p = 5",
+    explanation: "<code>int * const p</code> makes the <em>pointer</em> const — you cannot change where <code>p</code> points. But the value it points to is not const, so <code>*p = 5</code> is perfectly legal."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "Why is returning <code>&amp;a</code> from a function dangerous when <code>a</code> is a local <code>int</code>?",
+    options: [
+      "A) a is const",
+      "B) a ceases to exist after return",
+      "C) Pointers can't be returned from functions",
+      "D) It only works for global variables"
+    ],
+    answer: "B) a ceases to exist after return",
+    explanation: "Local variables live on the stack and are destroyed when the function returns. Returning a pointer to one yields a <em>dangling pointer</em> — the memory it references is no longer valid, causing undefined behavior."
+  },
+  {
+    id: 5,
+    type: "trace",
+    prompt: "What does this program print? (Enter just the number)",
+    code: "void f(int *p) { *p = 10; }\nint main() {\n    int x = 1;\n    f(&x);\n    printf(\"%d\", x);\n}",
+    answer: "10",
+    explanation: "<code>f</code> receives the address of <code>x</code>. Inside <code>f</code>, <code>*p = 10</code> writes through the pointer, directly modifying <code>x</code>. So <code>printf</code> prints <code>10</code>."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "To swap two <code>int</code> variables inside a function, the parameters must be of type:",
+    options: ["A) int", "B) int*", "C) int&", "D) const int*"],
+    answer: "B) int*",
+    explanation: "To mutate the caller's variables you need their addresses. <code>int*</code> (pointer-to-int) lets the function dereference and modify the originals. Plain <code>int</code> only copies the values; <code>int&</code> is C++ only; <code>const int*</code> forbids writing through the pointer."
+  }
+];
+
+// ── render ────────────────────────────────────────────────────────────────────
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.dataset.qid = q.id;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = q.type === "trace" ? "Type the output or value…" : "Write your answer…";
+    inputArea.appendChild(ta);
+  }
+});
+
+// ── grade ─────────────────────────────────────────────────────────────────────
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      // mark buttons
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  // show results
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>

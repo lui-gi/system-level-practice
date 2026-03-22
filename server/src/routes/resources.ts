@@ -20,7 +20,20 @@ resourcesRouter.get("/", async (_req, res) => {
   }
 });
 
-// GET /api/resources/:id — serve a single resource's HTML content
+// GET /api/resources/:id/raw — serve HTML file directly for iframe rendering
+resourcesRouter.get("/:id/raw", async (req, res) => {
+  const { id } = req.params;
+  const filePath = join(RESOURCES_DIR, `${id}.html`);
+  try {
+    const html = await readFile(filePath, "utf-8");
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(html);
+  } catch {
+    res.status(404).send("Resource not found");
+  }
+});
+
+// GET /api/resources/:id — serve a single resource's HTML content as JSON
 resourcesRouter.get("/:id", async (req, res) => {
   const { id } = req.params;
   const filePath = join(RESOURCES_DIR, `${id}.html`);
