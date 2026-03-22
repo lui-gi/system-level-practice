@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Char Pointers and Strings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge badge-ch13">Chapter 13</span>
+    <div class="qz-title">Char Pointers and Strings</div>
+    <div class="qz-desc"><code>char[]</code> vs <code>char *</code>, string literals, <code>strlen</code> / <code>strcpy</code> / <code>strcat</code> / <code>strcmp</code></div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px;
+    color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .badge-ch11, .badge-ch12, .badge-ch13 { /* all chapters same neutral style */ }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em;
+    margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem;
+    padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  /* MCQ buttons */
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%);
+    font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct  { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong    { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  /* Textarea */
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  /* Submit & results */
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem;
+    margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem;
+    font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong    { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "What is the result of the following?",
+    code: 'char *s = "hello";\ns[0] = \'H\';',
+    options: [
+      "A) Works fine",
+      "B) Compile error",
+      "C) Undefined behavior (modifying literal)",
+      "D) Prints Hello"
+    ],
+    answer: "C) Undefined behavior (modifying literal)",
+    explanation: "<code>char *s = \"hello\"</code> makes <code>s</code> point to a string literal stored in read-only memory. Attempting to modify it through <code>s[0]</code> is undefined behavior — the program may crash with a segfault or silently do nothing."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "What is the result of the following?",
+    code: 'char s[] = "hello";\ns[0] = \'H\';',
+    options: [
+      "A) Works fine",
+      "B) Compile error",
+      "C) Undefined behavior",
+      "D) Only works if s has extra space"
+    ],
+    answer: "A) Works fine",
+    explanation: "<code>char s[]</code> declares a writable array on the stack initialized with the characters of <code>\"hello\"</code>. Unlike a pointer to a literal, this array is mutable, so <code>s[0] = 'H'</code> is perfectly legal."
+  },
+  {
+    id: 3,
+    type: "trace",
+    prompt: "What does the following print? (Enter just the number)",
+    code: 'printf("%d", strlen("hello"));',
+    answer: "5",
+    explanation: "<code>strlen</code> counts characters up to but not including the null terminator <code>'\\0'</code>. <code>\"hello\"</code> has 5 characters: h, e, l, l, o."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "For <code>strcpy(dest, src)</code> to work correctly, <code>dest</code> must be:",
+    options: [
+      "A) A string literal",
+      "B) Large enough to hold src",
+      "C) NULL-terminated already",
+      "D) A const pointer"
+    ],
+    answer: "B) Large enough to hold src",
+    explanation: "<code>strcpy</code> copies all bytes of <code>src</code> including the null terminator into <code>dest</code>. If <code>dest</code> is too small, it writes past the buffer — a classic buffer overflow leading to undefined behavior."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "After the following executes, what does <code>s</code> contain?",
+    code: 'char s[20] = "abc";\nstrcat(s, "def");',
+    options: ["A) abc", "B) def", "C) abcdef", "D) abcdefabc"],
+    answer: "C) abcdef",
+    explanation: "<code>strcat</code> appends <code>src</code> to the end of <code>dest</code> by finding the null terminator of <code>dest</code> and writing there. <code>\"abc\"</code> + <code>\"def\"</code> = <code>\"abcdef\"</code>."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "What does <code>strcmp(\"abc\", \"abc\")</code> return?",
+    options: ["A) 1", "B) -1", "C) 0", "D) The length of the string"],
+    answer: "C) 0",
+    explanation: "<code>strcmp</code> returns <code>0</code> when both strings are identical, a negative value when the first is lexicographically less, and a positive value when greater. Equal strings always return <code>0</code>."
+  }
+];
+
+// ── render ────────────────────────────────────────────────────────────────────
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.dataset.qid = q.id;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = q.type === "trace" ? "Type the output or value…" : "Write your answer…";
+    inputArea.appendChild(ta);
+  }
+});
+
+// ── grade ─────────────────────────────────────────────────────────────────────
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>

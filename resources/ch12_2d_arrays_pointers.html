@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pointers and 2D Arrays</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge badge-ch12">Chapter 12</span>
+    <div class="qz-title">Pointers and 2D Arrays</div>
+    <div class="qz-desc">Row pointers, <code>(*p)[N]</code>, processing rows and columns</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px;
+    color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .badge-ch11, .badge-ch12, .badge-ch13 { /* all chapters same neutral style */ }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em;
+    margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem;
+    padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  /* MCQ buttons */
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%);
+    font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct  { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong    { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  /* Textarea */
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  /* Submit & results */
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem;
+    margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem;
+    font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong    { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "Given the setup below, what element does <code>*(p+1)</code> refer to?",
+    code: "int a[3][4];\nint *p = &a[0][0];",
+    options: ["A) a[0][0]", "B) a[0][1]", "C) a[1][0]", "D) a[1][1]"],
+    answer: "B) a[0][1]",
+    explanation: "<code>p</code> is a plain <code>int*</code> pointing to the first element. Adding 1 advances by one <code>int</code>, landing on <code>a[0][1]</code> — the second element in row 0."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "What is the type of the array name <code>a</code> in the declaration below?",
+    code: "int a[3][4];",
+    options: ["A) int *", "B) int (*)[4]", "C) int **", "D) int (*)[3]"],
+    answer: "B) int (*)[4]",
+    explanation: "A 2D array name decays to a pointer to its first row. Each row has 4 ints, so the type is <em>pointer to array of 4 ints</em> — written <code>int (*)[4]</code>."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "After <code>p += 4</code> in the setup below, where does <code>p</code> point?",
+    code: "int a[3][4];\nint *p = &a[0][0];\np += 4;",
+    options: ["A) a[0][3]", "B) a[0][4]", "C) a[1][0]", "D) a[1][1]"],
+    answer: "C) a[1][0]",
+    explanation: "Each row of <code>a[3][4]</code> contains 4 ints. Starting from <code>a[0][0]</code> and advancing 4 positions moves exactly past row 0, landing on <code>a[1][0]</code>."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "To declare a pointer <code>p</code> that steps through rows of <code>int a[5][10]</code>, which declaration is correct?",
+    options: ["A) int *p", "B) int **p", "C) int (*p)[10]", "D) int (*p)[5]"],
+    answer: "C) int (*p)[10]",
+    explanation: "Each row of <code>a[5][10]</code> is an array of 10 ints. A row pointer must have type <em>pointer to array of 10 ints</em>: <code>int (*p)[10]</code>. Incrementing it advances by a full row (10 ints)."
+  },
+  {
+    id: 5,
+    type: "trace",
+    prompt: "What does this program print? (Enter just the number)",
+    code: "int a[2][3] = {{1, 2, 3}, {4, 5, 6}};\nint *p = &a[0][0];\nprintf(\"%d\", *(p + 4));",
+    answer: "5",
+    explanation: "The 2D array is laid out in memory as <code>1 2 3 4 5 6</code>. <code>p</code> starts at index 0 (value 1). <code>p+4</code> reaches index 4 (value 5), so <code>*(p+4)</code> is <code>5</code>."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "In a row-pointer loop where <code>p</code> is of type <code>int (*)[N]</code>, what does <code>(*p)[i] = 0</code> clear?",
+    options: [
+      "A) Row i of the array",
+      "B) Column i of the current row",
+      "C) Element i of the entire array",
+      "D) The pointer p itself"
+    ],
+    answer: "B) Column i of the current row",
+    explanation: "<code>*p</code> dereferences the row pointer, giving the current row (an array of N ints). Indexing with <code>[i]</code> then selects column <code>i</code> of that row and sets it to 0."
+  }
+];
+
+// ── render ────────────────────────────────────────────────────────────────────
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.dataset.qid = q.id;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = q.type === "trace" ? "Type the output or value…" : "Write your answer…";
+    inputArea.appendChild(ta);
+  }
+});
+
+// ── grade ─────────────────────────────────────────────────────────────────────
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>

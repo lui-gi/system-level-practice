@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Array Name as Pointer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge badge-ch12">Chapter 12</span>
+    <div class="qz-title">Array Name as Pointer</div>
+    <div class="qz-desc">Decay, <code>p[i]</code> ≡ <code>*(p+i)</code>, equivalence in function params</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px;
+    color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .badge-ch11, .badge-ch12, .badge-ch13 { /* all chapters same neutral style */ }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em;
+    margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem;
+    padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  /* MCQ buttons */
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%);
+    font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct  { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong    { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  /* Textarea */
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  /* Submit & results */
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem;
+    margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem;
+    font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong    { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "Given <code>int a[5];</code>, the statement <code>*a = 7;</code> modifies which element?",
+    options: ["A) No element — compile error", "B) a[0]", "C) a[1]", "D) All elements"],
+    answer: "B) a[0]",
+    explanation: "An array name decays to a pointer to its first element. So <code>a</code> is equivalent to <code>&a[0]</code>, and <code>*a</code> dereferences that to give <code>a[0]</code>."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Given <code>int a[5];</code>, the statement <code>*(a+2) = 13;</code> modifies which element?",
+    options: ["A) a[1]", "B) a[3]", "C) a[2]", "D) No element — compile error"],
+    answer: "C) a[2]",
+    explanation: "<code>a</code> decays to <code>&a[0]</code>. Adding 2 gives <code>&a[2]</code>, and dereferencing sets <code>a[2] = 13</code>. This is exactly equivalent to <code>a[2] = 13</code>."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "Is <code>a++</code> legal when <code>a</code> is declared as <code>int a[10]</code>?",
+    options: ["A) Yes", "B) No", "C) Only inside a function", "D) Only if a has more than 1 element"],
+    answer: "B) No",
+    explanation: "An array name is not a modifiable lvalue — it is a fixed address baked into the stack frame. You cannot increment it. To step through the array with <code>++</code>, assign it to a pointer first: <code>int *p = a; p++;</code>"
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "After <code>int a[5]; int *p = a;</code>, the expression <code>p[3]</code> is equivalent to?",
+    options: ["A) a[3]", "B) a[4]", "C) *(a+4)", "D) &a[3]"],
+    answer: "A) a[3]",
+    explanation: "<code>p[3]</code> is defined as <code>*(p+3)</code>. Since <code>p == a</code>, this is <code>*(a+3)</code>, which is <code>a[3]</code>."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "The two function signatures below are:",
+    code: "int find(int a[], int n);\nint find(int *a, int n);",
+    options: ["A) Equivalent", "B) Different — array version copies the array", "C) Different — pointer version is faster", "D) Different — only the pointer version compiles"],
+    answer: "A) Equivalent",
+    explanation: "In a function parameter list, <code>int a[]</code> is automatically adjusted to <code>int *a</code> by the compiler. Both signatures declare the exact same function — a pointer to int and a count."
+  },
+  {
+    id: 6,
+    type: "trace",
+    prompt: "What does the following print? (Enter just the number)",
+    code: "int a[] = {10, 20, 30};\nint *p = a;\nprintf(\"%d\", *(p + 1));",
+    answer: "20",
+    explanation: "<code>p</code> points to <code>a[0]</code>. <code>p + 1</code> points to <code>a[1]</code>. Dereferencing gives <code>a[1] = 20</code>."
+  }
+];
+
+// ── render ────────────────────────────────────────────────────────────────────
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.dataset.qid = q.id;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = q.type === "trace" ? "Type the output or value…" : "Write your answer…";
+    inputArea.appendChild(ta);
+  }
+});
+
+// ── grade ─────────────────────────────────────────────────────────────────────
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
