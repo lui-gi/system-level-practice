@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Expressions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge badge-ch04">Chapter 4</span>
+    <div class="qz-title">Expressions</div>
+    <div class="qz-desc">Relational operators, increment/decrement, ASCII arithmetic, ternary operator, logical &amp; short-circuit evaluation</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "trace",
+    prompt: "What is the value of <code>z</code> after the following executes? (Enter just the number)",
+    code: "int x = 5, y = 3, z;\nz = (x < y);",
+    answer: "0",
+    explanation: "<code>x &lt; y</code> is <code>5 &lt; 3</code>, which is false. In C, false evaluates to the integer <code>0</code>, so <code>z = 0</code>."
+  },
+  {
+    id: 2,
+    type: "trace",
+    prompt: "After the following executes, what are the values of <code>a</code>, <code>b</code>, <code>c</code>, and <code>d</code>? (Enter as: a=? b=? c=? d=?)",
+    code: "int a, b, c, d;\na = 15; b = 10;\nc = ++a - b;\nd = b++ + a;",
+    answer: "a=16 b=11 c=6 d=26",
+    explanation: "<code>++a</code> pre-increments a to 16 before the subtraction: <code>c = 16 - 10 = 6</code>. Then <code>b++</code> uses b's current value (10) in the addition but increments b afterward: <code>d = 10 + 16 = 26</code>, and b becomes 11."
+  },
+  {
+    id: 3,
+    type: "trace",
+    prompt: "After the following executes, what are the values of <code>i</code>, <code>j</code>, and <code>y</code>? (Enter as: i=? j=? y=?)",
+    code: "int i = 6;\nint j = 4;\nint y;\ny = (j++) * (++i);",
+    answer: "i=7 j=5 y=28",
+    explanation: "<code>++i</code> pre-increments i to 7 and uses 7. <code>j++</code> post-increments: uses j's current value 4 in the multiplication, then j becomes 5. So <code>y = 4 * 7 = 28</code>."
+  },
+  {
+    id: 4,
+    type: "trace",
+    prompt: "What is the value of <code>x</code>? (ASCII value of <code>'2'</code> is 50. Enter just the number.)",
+    code: "int x, y = 10;\nchar z = '2';\nx = y + z;",
+    answer: "60",
+    explanation: "In C, a <code>char</code> is implicitly promoted to <code>int</code> in arithmetic. The character <code>'2'</code> has ASCII value 50. So <code>x = 10 + 50 = 60</code>."
+  },
+  {
+    id: 5,
+    type: "trace",
+    prompt: "What will be printed? (Enter exactly as printed, no spaces)",
+    code: 'int n = 49;\nn % 3 == 0 ? printf("Hello!") : printf("World");',
+    answer: "World",
+    explanation: "<code>49 % 3 = 1</code>, which is not 0, so the condition is false. The ternary operator evaluates the false branch: <code>printf(\"World\")</code>."
+  },
+  {
+    id: 6,
+    type: "trace",
+    prompt: "What will be printed? (Enter just the number)",
+    code: '#include <stdio.h>\nint main() {\n    int a = 0;\n    a = (a == (a == 1));\n    printf("%d", a);\n    return 0;\n}',
+    answer: "1",
+    explanation: "Evaluated inside-out: <code>(a == 1)</code> → <code>(0 == 1)</code> → <code>0</code>. Then <code>(a == 0)</code> → <code>(0 == 0)</code> → <code>1</code>. So <code>a = 1</code> and <code>printf</code> prints <code>1</code>."
+  },
+  {
+    id: 7,
+    type: "mcq",
+    prompt: "After the following executes, what is the value of <code>x</code>? (Short-circuit evaluation)",
+    code: "int x = 5;\nint z = 1 || --x;",
+    options: ["A) 4", "B) 5", "C) 1", "D) 0"],
+    answer: "B) 5",
+    explanation: "With <code>||</code> (logical OR), if the left operand is truthy, the right operand is never evaluated (short-circuit). Since <code>1</code> is truthy, <code>--x</code> is never executed and <code>x</code> remains <code>5</code>."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
