@@ -16,7 +16,7 @@ export default function Navbar() {
           to="/"
           className="text-sm font-semibold text-foreground transition-colors hover:text-muted-foreground"
         >
-          CSC 3320
+          SysLevel Practice
         </Link>
         <nav className="flex items-center gap-6">
           {navLinks.map(({ to, label }) => (

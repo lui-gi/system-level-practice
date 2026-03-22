@@ -26,11 +26,10 @@ export default function HomePage() {
           CSC 3320 · System Level Programming
         </p>
         <h1 className="mb-4 text-4xl font-semibold tracking-tight text-foreground">
-          Practice Hub
+          SysLevel Practice
         </h1>
         <p className="mb-8 max-w-md text-sm leading-relaxed text-muted-foreground">
-          Practice resources and lecture slides for System Level Programming —
-          all scoped to course material.
+          Practice resources for CSC 3320. Includes lecture slides for easy cross-referencing.
         </p>
         <div className="flex items-center gap-3">
           <Link
@@ -47,6 +46,7 @@ export default function HomePage() {
             View Slides →
           </Link>
         </div>
+
       </section>
 
       {/* Section cards */}
@@ -73,6 +73,22 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Attribution */}
+      <div className="mt-10 flex flex-col items-start gap-3">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+          made by:
+        </p>
+        <pre
+          className="font-mono text-xs text-muted-foreground"
+          style={{ animation: "spinY 6s linear infinite", display: "inline-block" }}
+        >{` _       _       _
+| |_   _(_) __ _(_)
+| | | | | |/ _\` | |
+| | |_| | | (_| | |
+|_|\\__,_|_|\\__, |_|
+           |___/   `}</pre>
+      </div>
     </div>
   );
 }
