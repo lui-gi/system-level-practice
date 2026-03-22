@@ -7,12 +7,14 @@ const sections = [
     icon: BookOpen,
     title: "Lecture Slides",
     description: "Browse PDF slide decks from class. Cross-reference topics while working through practice problems.",
+    highlight: false,
   },
   {
     to: "/practice",
     icon: PenLine,
     title: "Practice Resources",
     description: "Exercises and quizzes scoped to course material. Test your understanding topic by topic.",
+    highlight: true,
   },
 ];
 
@@ -31,21 +33,6 @@ export default function HomePage() {
         <p className="mb-8 max-w-md text-sm leading-relaxed text-muted-foreground">
           Practice resources for CSC 3320. Includes lecture slides for easy cross-referencing.
         </p>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/practice"
-            className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Browse Practice
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-          <Link
-            to="/slides"
-            className="inline-flex items-center px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            View Slides →
-          </Link>
-        </div>
 
       </section>
 
@@ -55,19 +42,23 @@ export default function HomePage() {
           Sections
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
-          {sections.map(({ to, icon: Icon, title, description }) => (
+          {sections.map(({ to, icon: Icon, title, description, highlight }) => (
             <Link
               key={to}
               to={to}
-              className="group flex flex-col gap-4 rounded border border-border p-6 transition-colors hover:bg-accent"
+              className={`group flex flex-col gap-4 rounded border p-6 transition-colors ${
+                highlight
+                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "border-border hover:bg-accent"
+              }`}
             >
               <div className="flex items-center justify-between">
-                <Icon className="h-4 w-4 text-primary" />
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                <Icon className={`h-4 w-4 ${highlight ? "text-primary-foreground" : "text-primary"}`} />
+                <ArrowRight className={`h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 ${highlight ? "text-primary-foreground" : "text-muted-foreground"}`} />
               </div>
               <div>
-                <h3 className="mb-1 text-sm font-medium text-foreground">{title}</h3>
-                <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+                <h3 className={`mb-1 text-sm font-medium ${highlight ? "text-primary-foreground" : "text-foreground"}`}>{title}</h3>
+                <p className={`text-xs leading-relaxed ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{description}</p>
               </div>
             </Link>
           ))}
