@@ -19,4 +19,6 @@ app.use("/api/health", healthRouter);
 app.use("/api/resources", resourcesRouter);
 app.use("/api/slides", slidesRouter);
 
-export const handler = serverless(app);
+export const handler = serverless(app, {
+  binary: ["application/pdf"],
+});
