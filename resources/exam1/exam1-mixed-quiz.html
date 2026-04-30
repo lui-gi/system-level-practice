@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Exam 1 Mixed Practice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Exam 1</span>
+    <div class="qz-title">Exam 1 Mixed Practice</div>
+    <div class="qz-desc">Weeks 1–5 — All exam 1 topics combined</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "Which layer coordinates between application programs and computer hardware?",
+    options: ["A) Application layer", "B) Operating System", "C) User layer", "D) Network layer"],
+    answer: "B) Operating System",
+    explanation: "The Operating System sits between applications and hardware, managing resources (CPU, memory, I/O) and providing services that applications can call through system calls and APIs."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Which key combination suspends (does NOT terminate) a running process?",
+    options: ["A) Ctrl+C", "B) Ctrl+Z", "C) Ctrl+D", "D) Ctrl+S"],
+    answer: "B) Ctrl+Z",
+    explanation: "Ctrl+Z sends SIGTSTP, which suspends the process and puts it in the background. Ctrl+C sends SIGINT and terminates the process. Ctrl+D signals end-of-file. Ctrl+S pauses terminal output."
+  },
+  {
+    id: 3,
+    type: "trace",
+    prompt: "Write the chmod command (octal) to set: user=rwx, group=r-x, others=r-x.",
+    answer: "chmod 755 file.txt",
+    explanation: "rwx = 4+2+1 = 7, r-x = 4+0+1 = 5, r-x = 5. So the octal is 755. The command is: chmod 755 file.txt"
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "What does <code>wc -l file.txt</code> count?",
+    options: [
+      "A) The number of lines in the file",
+      "B) The number of words in the file",
+      "C) The number of characters in the file",
+      "D) The number of bytes in the file"
+    ],
+    answer: "A) The number of lines in the file",
+    explanation: "<code>wc -l</code> counts lines. <code>wc -w</code> counts words, <code>wc -c</code> counts bytes/characters."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "In vi, which key exits insert mode and returns to normal mode?",
+    options: ["A) Enter", "B) Esc", "C) Ctrl+C", "D) q"],
+    answer: "B) Esc",
+    explanation: "Pressing Esc exits insert mode and returns vi to normal (command) mode. From normal mode you can navigate, delete, yank, and issue <code>:</code> commands."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "Which regex matches lines that begin with a digit?",
+    options: ["A) ^[0-9]", "B) [0-9]$", "C) .[0-9]", "D) *[0-9]"],
+    answer: "A) ^[0-9]",
+    explanation: "<code>^</code> anchors to the start of the line. <code>[0-9]</code> matches any digit. Together, <code>^[0-9]</code> matches lines whose first character is a digit."
+  },
+  {
+    id: 7,
+    type: "mcq",
+    prompt: "What is the output of <code>printf(\"%d\", 5 * 3 % 2);</code> in C?",
+    options: ["A) 1", "B) 7", "C) 0", "D) 15"],
+    answer: "A) 1",
+    explanation: "<code>*</code> and <code>%</code> have equal precedence and are left-associative, so this evaluates as <code>(5 * 3) % 2</code> = <code>15 % 2</code> = <code>1</code>."
+  },
+  {
+    id: 8,
+    type: "trace",
+    prompt: "What does C print? (Enter just the number)",
+    code: "int i = 7, j = 8;\ni *= j + 1;\nprintf(\"%d\", i);",
+    answer: "63",
+    explanation: "<code>i *= j + 1</code> expands to <code>i = i * (j + 1)</code> = 7 * (8 + 1) = 7 * 9 = 63. Note: compound assignment operators have lower precedence than addition."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "Which of the following is NOT a valid C keyword?",
+    options: ["A) while", "B) typedef", "C) goto", "D) real"],
+    answer: "D) real",
+    explanation: "<code>real</code> is not a C keyword. C uses <code>float</code> and <code>double</code> for real numbers. <code>while</code>, <code>typedef</code>, and <code>goto</code> are all valid C keywords."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "What does <code>i = j = k = 0;</code> do in C?",
+    options: [
+      "A) Only assigns 0 to i",
+      "B) Assigns 0 to k first, then j, then i (right-to-left)",
+      "C) Causes a compile error",
+      "D) Assigns 0 to i first"
+    ],
+    answer: "B) Assigns 0 to k first, then j, then i (right-to-left)",
+    explanation: "The <code>=</code> operator is right-associative, so chained assignment evaluates right-to-left: <code>i = (j = (k = 0))</code>. All three variables end up as 0."
+  },
+  {
+    id: 11,
+    type: "mcq",
+    prompt: "Which printf format specifier is used to print a decimal integer?",
+    options: ["A) %d", "B) %f", "C) %s", "D) %c"],
+    answer: "A) %d",
+    explanation: "<code>%d</code> prints a signed decimal integer. <code>%f</code> is for floats, <code>%s</code> for strings, <code>%c</code> for single characters."
+  },
+  {
+    id: 12,
+    type: "mcq",
+    prompt: "What does <code>fork()</code> return in the child process?",
+    options: ["A) The child's PID", "B) 0", "C) -1", "D) 1"],
+    answer: "B) 0",
+    explanation: "<code>fork()</code> returns 0 in the child process, the child's PID in the parent process, and -1 if the fork failed. This lets both parent and child know their role after the call."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
