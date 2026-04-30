@@ -16,7 +16,7 @@ function isValidSection(section: string): boolean {
 function safeResolve(section: string, filename: string): string | null {
   const sectionDir = resolve(RESOURCES_DIR, section);
   const target = resolve(sectionDir, filename);
-  if (!target.startsWith(sectionDir + "/") && target !== sectionDir) {
+  if (!target.startsWith(sectionDir + "/")) {
     return null;
   }
   return target;
