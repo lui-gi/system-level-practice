@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>System Programming Concepts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Week 1</span>
+    <div class="qz-title">System Programming Concepts</div>
+    <div class="qz-desc">OS layers, APIs, system calls, daemons, pipes</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "Which of the following is NOT an example of system programming?",
+    options: [
+      "A) Managing system resources",
+      "B) Performing I/O",
+      "C) Developing a website",
+      "D) File manipulation"
+    ],
+    answer: "C) Developing a website",
+    explanation: "System programming involves tasks close to the OS: resource management, I/O, file manipulation, process control. Developing a website is application-level programming."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Which layer lies between application programs and computer hardware?",
+    options: [
+      "A) Application programs",
+      "B) Operating System",
+      "C) Users",
+      "D) Database"
+    ],
+    answer: "B) Operating System",
+    explanation: "The OS sits between applications and hardware, coordinating resource access and providing an abstraction layer for applications."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "What is an API in the context of system programming?",
+    options: [
+      "A) A hardware driver",
+      "B) A collection of libraries provided by the OS for lower-level tasks",
+      "C) A compiler setting",
+      "D) A network protocol"
+    ],
+    answer: "B) A collection of libraries provided by the OS for lower-level tasks",
+    explanation: "An API (Application Programming Interface) is a collection of libraries provided by the host OS so that application programmers can communicate with the OS for hardware-level tasks."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "Which of the following is NOT system software?",
+    options: [
+      "A) Antivirus",
+      "B) Missile control systems",
+      "C) Shell",
+      "D) Kernel"
+    ],
+    answer: "B) Missile control systems",
+    explanation: "Missile control systems are embedded/application software, not system software. System software includes the kernel, shell, antivirus, compilers, etc."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "Which command records a terminal session to a file?",
+    options: [
+      "A) script",
+      "B) record",
+      "C) tee",
+      "D) log"
+    ],
+    answer: "A) script",
+    explanation: "The <code>script</code> command records everything printed to the terminal into a file (typescript by default). Example: <code>script session.log</code>."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "Which key combination terminates a running program?",
+    options: [
+      "A) Ctrl+C",
+      "B) Ctrl+Z",
+      "C) Ctrl+S",
+      "D) Ctrl+D"
+    ],
+    answer: "A) Ctrl+C",
+    explanation: "Ctrl+C sends SIGINT to the foreground process, terminating it. Ctrl+Z suspends it (sends SIGTSTP). Ctrl+D signals end-of-input. Ctrl+S pauses terminal output."
+  },
+  {
+    id: 7,
+    type: "mcq",
+    prompt: "What is the difference between Ctrl+Z and Ctrl+C?",
+    options: [
+      "A) They do the same thing",
+      "B) Ctrl+Z suspends the process; Ctrl+C terminates it",
+      "C) Ctrl+Z terminates the process; Ctrl+C suspends it",
+      "D) Ctrl+Z saves the file"
+    ],
+    answer: "B) Ctrl+Z suspends the process; Ctrl+C terminates it",
+    explanation: "Ctrl+Z sends SIGTSTP, suspending the process and returning control to the shell (you can resume with <code>fg</code>). Ctrl+C sends SIGINT, which terminates the process."
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "A system daemon is best described as:",
+    options: [
+      "A) A graphical application",
+      "B) A background process that runs continuously without user interaction",
+      "C) A type of shell script",
+      "D) A hardware interrupt handler"
+    ],
+    answer: "B) A background process that runs continuously without user interaction",
+    explanation: "Daemons are long-running background processes that perform system services (e.g., <code>sshd</code>, <code>crond</code>). They typically start at boot and run without direct user interaction."
+  },
+  {
+    id: 9,
+    type: "trace",
+    prompt: "Write a valid Unix pipe example using <code>who</code> and <code>sort</code>.",
+    answer: "who | sort",
+    explanation: "The pipe <code>|</code> connects stdout of one command to stdin of the next. <code>who | sort</code> lists logged-in users sorted alphabetically."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "Which of the following is a system call (not a C library function)?",
+    options: [
+      "A) printf()",
+      "B) fopen()",
+      "C) fork()",
+      "D) strlen()"
+    ],
+    answer: "C) fork()",
+    explanation: "<code>fork()</code> is a POSIX system call that creates a new process. <code>printf()</code>, <code>fopen()</code>, and <code>strlen()</code> are C standard library functions that may internally invoke system calls."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type your answer…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
