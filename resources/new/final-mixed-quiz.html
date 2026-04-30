@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Final Exam Mixed Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Final Review</span>
+    <div class="qz-title">Final Exam Mixed Review</div>
+    <div class="qz-desc">Strings · Structures · Dynamic Memory · File I/O · Process Management</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "What does <code>strcmp(\"apple\", \"apple\")</code> return?",
+    options: ["A) 1", "B) -1", "C) 0", "D) A positive value"],
+    answer: "C) 0",
+    explanation: "strcmp returns 0 when both strings are identical character by character. A negative value means the first string is less; a positive value means it is greater."
+  },
+  {
+    id: 2,
+    type: "trace",
+    prompt: "What is printed?",
+    code: 'char str[] = "System";\nprintf("%.3s\\n", str);',
+    answer: "Sys",
+    explanation: '%.3s prints the first 3 characters of the string — "Sys".'
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "What is <code>sizeof(struct { long l; int i; char c; })</code> on a 64-bit system (long=8, int=4, char=1)?",
+    options: ["A) 13", "B) 16", "C) 24", "D) 8"],
+    answer: "B) 16",
+    explanation: "long l (8 bytes) + int i (4 bytes) + char c (1 byte) = 13 bytes of data. Padding rounds up to the next multiple of 8 (largest alignment = 8 for long): 13 → 16. sizeof = 16."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "What is the difference between passing <code>struct Part p</code> vs <code>struct Part *p</code> to a function?",
+    options: [
+      "A) Both allow modification of the caller's struct",
+      "B) The pointer version allows modifying the caller's struct; the value version gets a copy",
+      "C) The value version is faster for large structs",
+      "D) There is no difference"
+    ],
+    answer: "B) The pointer version allows modifying the caller's struct; the value version gets a copy",
+    explanation: "Pass by value copies all members. Modifications inside the function do not affect the original. Pass by pointer gives the function direct access to the original struct via -> or (*p).member."
+  },
+  {
+    id: 5,
+    type: "trace",
+    prompt: "What is the value of <code>x.number</code> after this code runs? (Enter just the number)",
+    code: "struct Part { int number; char name[20]; };\nstruct Part x = {42, \"Widget\"};\nstruct Part y = x;\ny.number = 99;",
+    answer: "42",
+    explanation: "y = x performs a member-by-member copy. x and y are independent — modifying y.number does not affect x.number, which stays 42."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "<code>realloc(NULL, n)</code> is equivalent to:",
+    options: ["A) free(n)", "B) malloc(n)", "C) calloc(1, n)", "D) An error — NULL is invalid"],
+    answer: "B) malloc(n)",
+    explanation: "The C standard specifies that realloc(NULL, n) behaves identically to malloc(n). This is useful for conditionally growing a buffer starting from NULL."
+  },
+  {
+    id: 7,
+    type: "trace",
+    prompt: "What is printed? (numbers separated by spaces)",
+    code: "/* Linked list: head -> 5 -> 15 -> 25 -> NULL */\nstruct Node *cur = head;\nwhile (cur != NULL) {\n    printf(\"%d \", cur->data);\n    cur = cur->next;\n}",
+    answer: "5 15 25",
+    explanation: 'The while loop traverses from head to NULL, printing each node\'s data field. Output: "5 15 25 " — trailing space trimmed for grading.'
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "Which <code>fopen</code> mode opens a file for writing and <strong>appends</strong> if the file already exists?",
+    options: ['A) "w"', 'B) "r+"', 'C) "a"', 'D) "w+"'],
+    answer: 'C) "a"',
+    explanation: 'Mode "a" opens for appending — the file pointer is positioned at the end. Existing content is preserved. "w" truncates existing content. "r+" opens for read/write from the beginning.'
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "The low-level POSIX system call to open a file read-only is:",
+    options: [
+      'A) fopen("f", "r")',
+      "B) open(\"f\", O_RDONLY)",
+      "C) read(\"f\", buf, n)",
+      "D) fread(buf, 1, n, fp)"
+    ],
+    answer: "B) open(\"f\", O_RDONLY)",
+    explanation: "open() is the POSIX system call for low-level file I/O. O_RDONLY is the flag for read-only access. fopen() is the higher-level C stdio function. read() and fread() read data from an already-opened file."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "Starting from 1 process, how many total processes exist after two sequential <code>fork()</code> calls (no branching)?",
+    options: ["A) 2", "B) 3", "C) 4", "D) 1"],
+    answer: "C) 4",
+    explanation: "First fork() → 2 processes. Each calls the second fork() → 4 processes total. Each fork doubles the count: 1 → 2 → 4. Generally, n forks give 2^n processes."
+  },
+  {
+    id: 11,
+    type: "mcq",
+    prompt: "After <code>dup2(fd, 1)</code> where <code>fd</code> was opened as \"log.txt\" in write mode, what happens when <code>printf(\"Hello\\n\")</code> is called?",
+    options: [
+      'A) "Hello" appears on the terminal',
+      'B) "Hello" is written to log.txt',
+      "C) printf fails silently",
+      "D) fd is closed"
+    ],
+    answer: 'B) "Hello" is written to log.txt',
+    explanation: "dup2(fd, 1) redirects file descriptor 1 (stdout) to point to the same file as fd. All subsequent writes to stdout — including printf — go to log.txt instead of the terminal."
+  },
+  {
+    id: 12,
+    type: "mcq",
+    prompt: "What is the correct way to check if <code>fork()</code> failed?",
+    options: ["A) if (pid == 0)", "B) if (pid < 0)", "C) if (pid > 0)", "D) if (pid == NULL)"],
+    answer: "B) if (pid < 0)",
+    explanation: "fork() returns -1 on failure (e.g., too many processes, CHILD_MAX exceeded). pid == 0 identifies the child; pid > 0 identifies the parent with the child's PID. pid_t is an integer type, not a pointer, so NULL comparison is meaningless."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>

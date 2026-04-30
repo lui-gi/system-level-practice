@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Strings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge badge-ch13">Chapter 13</span>
+    <div class="qz-title">Strings</div>
+    <div class="qz-desc"><code>strlen</code>, <code>strcpy</code>/<code>strncpy</code>, <code>strcat</code>/<code>strncat</code>, <code>strcmp</code>, reading and writing strings</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "What does <code>strlen(\"hello\\0world\")</code> return?",
+    options: ["A) 5", "B) 11", "C) 10", "D) 6"],
+    answer: "A) 5",
+    explanation: "strlen stops counting at the first null character '\\0'. The string \"hello\\0world\" has 5 characters before the embedded null, so strlen returns 5."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "After <code>strncpy(dest, \"Hello\", 3)</code> where dest has enough space, is <code>dest</code> null-terminated?",
+    options: [
+      "A) Yes, always",
+      "B) No — strncpy does not add '\\0' if n < strlen(src)",
+      "C) Only if dest was zeroed first",
+      "D) Depends on the OS"
+    ],
+    answer: "B) No — strncpy does not add '\\0' if n < strlen(src)",
+    explanation: "strncpy copies exactly n bytes. If src is longer than n, no null terminator is written to dest. You must manually null-terminate: dest[n] = '\\0'."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "What does <code>strcmp(\"Texas\", \"Dallas\")</code> return?",
+    options: ["A) 0", "B) a positive value", "C) a negative value", "D) undefined"],
+    answer: "B) a positive value",
+    explanation: "strcmp compares lexicographically. 'T' (ASCII 84) > 'D' (ASCII 68), so \"Texas\" is greater than \"Dallas\" and strcmp returns a positive value."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "Which call correctly reads a full line <em>including spaces</em> into <code>str</code>?",
+    options: [
+      "A) scanf(\"%s\", str)",
+      "B) scanf(\" %99[^\\n]\", str)",
+      "C) printf(\"%s\", str)",
+      "D) strlen(str)"
+    ],
+    answer: "B) scanf(\" %99[^\\n]\", str)",
+    explanation: "%s stops at the first whitespace character, so spaces are not captured. The %[^\\n] format reads everything until newline. The leading space skips any leftover whitespace or newline from prior input."
+  },
+  {
+    id: 5,
+    type: "trace",
+    prompt: "What is printed?",
+    code: 'char s[20] = "abc";\nstrcat(s, "def");\nprintf("%s", s);',
+    answer: "abcdef",
+    explanation: "strcat appends the second string to the end of the first. After strcat(s, \"def\"), s contains \"abcdef\", which printf prints."
+  },
+  {
+    id: 6,
+    type: "trace",
+    prompt: "What is printed? (Enter the exact output including any newline indicator as a blank line if needed — here just the characters printed)",
+    code: 'char str[] = "Hello";\nprintf("%.3s\\n", str);',
+    answer: "Hel",
+    explanation: "%.3s is a precision specifier that limits the output to at most 3 characters of the string. Only \"Hel\" is printed (the \\n just moves to the next line)."
+  },
+  {
+    id: 7,
+    type: "trace",
+    prompt: "What is the output? (Enter just the number)",
+    code: 'printf("%d\\n", strcmp("Dallas", "Texas"));',
+    answer: "-1",
+    explanation: "strcmp returns a negative value when the first argument is lexicographically less than the second. 'D' < 'T', so \"Dallas\" < \"Texas\". Most implementations return -1, though the C standard only guarantees a negative value."
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "What is the key difference between <code>puts(str)</code> and <code>printf(\"%s\", str)</code>?",
+    options: [
+      "A) puts adds a newline automatically, printf does not",
+      "B) They are identical in behavior",
+      "C) printf adds a newline, puts does not",
+      "D) puts requires a format string argument"
+    ],
+    answer: "A) puts adds a newline automatically, printf does not",
+    explanation: "puts(str) writes the string to stdout followed by a '\\n'. printf(\"%s\", str) writes only the string with no trailing newline unless you explicitly include \\n in the format string."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "What does <code>printf(\"%.6s\\n\", \"Are we having fun yet?\")</code> print?",
+    options: [
+      "A) Are we",
+      "B) Are we ",
+      "C) Are we having",
+      "D) Are we having fun yet?"
+    ],
+    answer: "A) Are we",
+    explanation: "%.6s is a precision specifier that prints at most 6 characters of the string. The first 6 characters of \"Are we having fun yet?\" are 'A','r','e',' ','w','e' — which is \"Are we\"."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "Why is <code>scanf(\"%s\", str)</code> written without <code>&amp;</code> in front of <code>str</code> when <code>str</code> is a char array?",
+    options: [
+      "A) It's a bug that happens to work on most compilers",
+      "B) str as an array name already decays to a pointer to its first element",
+      "C) %s does not need an address, unlike %d",
+      "D) scanf takes values, not addresses, for strings"
+    ],
+    answer: "B) str as an array name already decays to a pointer to its first element",
+    explanation: "In C, an array name used in an expression decays to a pointer to its first element. So str is equivalent to &str[0], which is exactly the char * that scanf needs for %s. Writing &str would give a char (*)[N] — a different type."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
