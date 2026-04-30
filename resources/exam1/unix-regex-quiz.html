@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Unix Regular Expressions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Weeks 2–3</span>
+    <div class="qz-title">Unix Regular Expressions</div>
+    <div class="qz-desc">grep -E, anchors, character classes, POSIX ERE</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "In a regular expression, what does <code>^</code> at the start of a pattern mean?",
+    options: [
+      "A) Matches the beginning of a line",
+      "B) Matches the end of a line",
+      "C) Negates the pattern",
+      "D) Matches any character"
+    ],
+    answer: "A) Matches the beginning of a line",
+    explanation: "<code>^</code> is an anchor that asserts the match must start at the beginning of the line. It does not consume any characters — it just marks position."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "What is the difference between <code>^[A-Za-z]+$</code> and <code>[A-Za-z]+</code>?",
+    options: [
+      "A) They are identical",
+      "B) The first requires the entire line to be letters; the second matches anywhere in the line",
+      "C) The first is case-insensitive",
+      "D) The second requires the whole line"
+    ],
+    answer: "B) The first requires the entire line to be letters; the second matches anywhere in the line",
+    explanation: "<code>^</code> anchors to line start, <code>$</code> anchors to line end. Together they require the full line to consist of only letters. Without anchors, the pattern matches any substring of letters anywhere in the line."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "Which grep flag enables extended regular expressions (ERE)?",
+    options: ["A) -r", "B) -E", "C) -x", "D) -P"],
+    answer: "B) -E",
+    explanation: "<code>grep -E</code> (or <code>egrep</code>) enables Extended Regular Expressions, which support <code>+</code>, <code>?</code>, <code>|</code>, and <code>{}</code> without backslashes. <code>-r</code> is recursive, <code>-P</code> is Perl-compatible."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "Which pattern matches one or more digits?",
+    options: ["A) [0-9]+", "B) [0-9]*", "C) \\d", "D) [0-9]?"],
+    answer: "A) [0-9]+",
+    explanation: "<code>+</code> means one or more. <code>*</code> means zero or more. <code>?</code> means zero or one. <code>\\d</code> is Perl-compatible (requires <code>-P</code>), not POSIX ERE."
+  },
+  {
+    id: 5,
+    type: "trace",
+    prompt: "Write a command that pipes <code>ls -l</code> output into grep to show only lines containing <code>.c</code> (use single quotes around the pattern).",
+    answer: "ls -l | grep -E '\\.c'",
+    explanation: "The dot must be escaped (<code>\\.</code>) to match a literal dot, not any character. The full command: <code>ls -l | grep -E '\\.c'</code>"
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "In a regex, what does <code>$</code> match?",
+    options: [
+      "A) The beginning of a line",
+      "B) The end of a line",
+      "C) Any digit",
+      "D) A literal dollar sign only"
+    ],
+    answer: "B) The end of a line",
+    explanation: "<code>$</code> is the end-of-line anchor. It asserts the position is at the end of the line. Paired with <code>^</code>, it forces a pattern to match the entire line."
+  },
+  {
+    id: 7,
+    type: "mcq",
+    prompt: "Which regex matches a string that is exactly 3 lowercase letters?",
+    options: ["A) [a-z]{3}", "B) ^[a-z]{3}", "C) ^[a-z]{3}$", "D) [a-z]+"],
+    answer: "C) ^[a-z]{3}$",
+    explanation: "<code>^</code> anchors to line start, <code>[a-z]{3}</code> matches exactly 3 lowercase letters, and <code>$</code> anchors to line end — ensuring the entire line is exactly those 3 letters."
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "In the character class <code>[^abc]</code>, what does <code>^</code> mean?",
+    options: [
+      "A) Match the beginning of a line",
+      "B) Match any character that is NOT a, b, or c",
+      "C) Match a, b, or c at the start",
+      "D) Escape the next character"
+    ],
+    answer: "B) Match any character that is NOT a, b, or c",
+    explanation: "Inside square brackets <code>[]</code>, <code>^</code> is a negation operator, not an anchor. <code>[^abc]</code> matches any single character except a, b, or c."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "Which grep option highlights matches in color?",
+    options: ["A) --color=auto", "B) --highlight", "C) -c", "D) --bold"],
+    answer: "A) --color=auto",
+    explanation: "<code>--color=auto</code> tells grep to highlight matching text with terminal color codes when output is a terminal. <code>-c</code> counts matching lines instead of showing them."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "What does <code>.*</code> match in a regular expression?",
+    options: [
+      "A) Zero or more of any character",
+      "B) One or more of any character",
+      "C) Exactly one character",
+      "D) A literal dot followed by any character"
+    ],
+    answer: "A) Zero or more of any character",
+    explanation: "<code>.</code> matches any single character (except newline by default). <code>*</code> means zero or more repetitions. Together <code>.*</code> matches any sequence of characters, including an empty string."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type your answer…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
