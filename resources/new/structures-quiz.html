@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Structures, Unions &amp; Enumerations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Chapter 16</span>
+    <div class="qz-title">Structures, Unions &amp; Enumerations</div>
+    <div class="qz-desc">struct declaration, member access, typedef, memory alignment, unions, enums</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "How do you access member <code>number</code> of a struct pointer <code>p</code>?",
+    options: ["A) p.number", "B) p->number", "C) *p.number", "D) &p.number"],
+    answer: "B) p->number",
+    explanation: "The arrow operator (->) dereferences the pointer and accesses the member in one step. It is equivalent to (*p).number."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Given <code>typedef struct { int number; char name[21]; } Part;</code>, which declaration is valid?",
+    options: ["A) struct Part p;", "B) Part p;", "C) part p;", "D) struct part p;"],
+    answer: "B) Part p;",
+    explanation: "typedef creates an alias \"Part\" for the struct type, so you declare variables with just \"Part p;\" without the struct keyword. \"struct Part\" is invalid because no tag was given."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "What is <code>sizeof(struct { int i; char c; })</code> on a typical system where <code>int</code> is 4 bytes?",
+    options: ["A) 5", "B) 8", "C) 6", "D) 4"],
+    answer: "B) 8",
+    explanation: "The struct has int i (4 bytes) + char c (1 byte) = 5 bytes of data, but it is padded to a multiple of the largest member's alignment (4 bytes for int), giving sizeof = 8."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "A union has members <code>int i</code> (4 bytes) and <code>double d</code> (8 bytes). What is its size?",
+    options: ["A) 4", "B) 8", "C) 12", "D) 16"],
+    answer: "B) 8",
+    explanation: "A union's size equals the size of its largest member (double = 8 bytes). All members share the same memory location, so only one can hold a value at a time."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "Given <code>enum Color { RED, GREEN=5, BLUE };</code>, what integer value does <code>BLUE</code> have?",
+    options: ["A) 1", "B) 2", "C) 5", "D) 6"],
+    answer: "D) 6",
+    explanation: "Enumerators without explicit values take the previous value plus 1. RED=0, GREEN=5 (explicit), BLUE=GREEN+1=6."
+  },
+  {
+    id: 6,
+    type: "trace",
+    prompt: "After calling <code>update(&amp;p1)</code>, what does <code>display(p1)</code> print? (Enter just the number)",
+    code: `struct Part { int number; };
+void update(struct Part *p) { (*p).number = 210; }
+void display(struct Part p)  { printf("%d\\n", p.number); }
+int main() {
+    struct Part p1 = {120}, p2 = {205};
+    display(p1);
+    display(p2);
+    update(&p1);
+    display(p1);
+    return 0;
+}`,
+    answer: "210",
+    explanation: "update() takes a pointer to p1 and sets number to 210 via (*p).number = 210. When display(p1) is called afterwards, it prints p1.number which is now 210."
+  },
+  {
+    id: 7,
+    type: "trace",
+    prompt: "What is <code>sizeof(struct stu_c)</code>? (Enter the number)",
+    code: `struct stu_c {
+    int i;   /* 4 bytes */
+    long l;  /* 8 bytes */
+    char c;  /* 1 byte  */
+};`,
+    answer: "24",
+    explanation: "int i (4 bytes) + 4 bytes padding (to align long to 8-byte boundary) + long l (8 bytes) + char c (1 byte) + 7 bytes padding (to round total up to multiple of 8) = 24 bytes."
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "Can you copy a struct using the <code>=</code> operator in C?",
+    options: [
+      "A) Yes, = performs a member-by-member copy",
+      "B) No, you must use memcpy",
+      "C) Only for structs without pointers",
+      "D) Only with typedef structs"
+    ],
+    answer: "A) Yes, = performs a member-by-member copy",
+    explanation: "In C, assigning one struct to another with = copies all members. However, you cannot compare structs with == — that is not supported and must be done member by member."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "When passing a struct to a function <strong>by value</strong>, what happens if the function modifies a member?",
+    options: [
+      "A) The original struct is modified",
+      "B) The original struct is unchanged — the function gets a copy",
+      "C) Undefined behavior",
+      "D) A compile error occurs"
+    ],
+    answer: "B) The original struct is unchanged — the function gets a copy",
+    explanation: "Pass by value copies all members into a new local struct. To modify the original, pass a pointer to the struct (pass by address) and use the -> operator inside the function."
+  },
+  {
+    id: 10,
+    type: "trace",
+    prompt: "What is <code>sizeof(struct stu_f)</code>? (Enter the number)",
+    code: `struct stu_f {
+    int i;    /* 4 bytes */
+    double d; /* 8 bytes */
+    char c;   /* 1 byte  */
+};`,
+    answer: "24",
+    explanation: "int i (4 bytes) + 4 bytes padding (to align double to 8-byte boundary) + double d (8 bytes) + char c (1 byte) + 7 bytes padding (to round total up to multiple of 8) = 24 bytes."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
