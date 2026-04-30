@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Process Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Unix Ch. 13</span>
+    <div class="qz-title">Process Management</div>
+    <div class="qz-desc">process states, fork(), wait(), zombie processes, dup2(), pipes</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem; display: inline-block; margin-bottom: .4rem; background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem; display: inline-block; margin-bottom: .6rem; background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem; border-radius: .375rem; overflow-x: auto; font-size: .8rem; border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5; border-radius: .375rem; background: #fff; cursor: pointer; color: #171717; font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem; font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5; border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem; background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem; font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif; cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "What value does <code>fork()</code> return in the child process?",
+    options: ["A) -1", "B) The child's PID", "C) 0", "D) The parent's PID"],
+    answer: "C) 0",
+    explanation: "fork() returns 0 to the child process, the child's PID to the parent, and -1 if the fork failed. This is how you distinguish which branch of code each process should execute."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "After a successful <code>fork()</code>, how many times does the code after the <code>fork()</code> call execute?",
+    options: ["A) Once (only in parent)", "B) Twice — once in the parent and once in the child", "C) Zero times", "D) It depends on the OS scheduler"],
+    answer: "B) Twice — once in the parent and once in the child",
+    explanation: "fork() creates an exact copy of the calling process. Both parent and child continue execution from the line after fork(). The return value of fork() tells them apart."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "What is a zombie process?",
+    options: [
+      "A) A process consuming 100% CPU",
+      "B) A process that is still running but unresponsive",
+      "C) A process that has exited but whose exit status hasn't been collected by its parent",
+      "D) A process whose parent process has died"
+    ],
+    answer: "C) A process that has exited but whose exit status hasn't been collected by its parent",
+    explanation: "When a child exits, its entry remains in the process table until the parent calls wait(). This lingering entry is called a zombie. Too many zombies exhaust the process table. The fix is for the parent to call wait()."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "Which process state transition occurs when a running process issues an I/O request?",
+    options: ["A) running → ready", "B) running → waiting", "C) waiting → terminated", "D) ready → running"],
+    answer: "B) running → waiting",
+    explanation: "When a process requests I/O, it cannot continue running until the I/O completes. The OS moves it to the waiting (blocked) state. When I/O finishes, it moves back to ready, then eventually to running when the scheduler dispatches it."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "What does <code>dup2(fd, STDOUT_FILENO)</code> do?",
+    options: [
+      "A) Closes fd",
+      "B) Makes stdout write to wherever fd points",
+      "C) Makes fd read from stdin",
+      "D) Duplicates stdout into fd"
+    ],
+    answer: "B) Makes stdout write to wherever fd points",
+    explanation: "dup2(oldfd, newfd) makes newfd refer to the same open file as oldfd. So dup2(fd, STDOUT_FILENO) redirects stdout (fd 1) to the file fd points to. After this, printf output goes to that file."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "A process tries to read from a pipe. All write ends of the pipe are closed. What happens?",
+    options: [
+      "A) The read blocks indefinitely",
+      "B) The read returns -1 with errno set",
+      "C) The read returns 0, indicating EOF",
+      "D) A SIGPIPE signal is sent to the reader"
+    ],
+    answer: "C) The read returns 0, indicating EOF",
+    explanation: "When all write ends of a pipe are closed and the reader tries to read, read() returns 0 — the same as end-of-file. This is how a reader knows no more data will arrive. SIGPIPE is sent to the writer when it writes to a pipe with no readers."
+  },
+  {
+    id: 7,
+    type: "trace",
+    prompt: "How many total lines of output does this program produce? (Enter just the number)",
+    code: '#include &lt;stdio.h&gt;\n#include &lt;unistd.h&gt;\nint main() {\n    printf("Before fork\\n");\n    pid_t pid = fork();\n    if (pid == 0)\n        printf("Child\\n");\n    else\n        printf("Parent\\n");\n    printf("After fork\\n");\n    return 0;\n}',
+    answer: "4",
+    explanation: '"Before fork" prints once (before fork). After fork, both parent and child run: parent prints "Parent" and "After fork"; child prints "Child" and "After fork". Total: 1 + 1 + 1 + 1 = 4 lines.'
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "The <code>fork() + exec()</code> pattern is used to:",
+    options: [
+      "A) Create a child that runs a completely different program",
+      "B) Speed up the parent process",
+      "C) Share memory between parent and child",
+      "D) Prevent zombie processes"
+    ],
+    answer: "A) Create a child that runs a completely different program",
+    explanation: "fork() creates a copy of the current process; exec() replaces that copy's memory image with a new program. Together they are the standard Unix way to launch a new program — used by shells to run commands."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "How many processes exist after this code runs (assuming all forks succeed)?",
+    code: "fork();\nfork();",
+    options: ["A) 2", "B) 3", "C) 4", "D) 1"],
+    answer: "C) 4",
+    explanation: "The first fork() creates 2 processes. Each of those then calls the second fork(), creating 2 more — 4 total. In general, n sequential fork() calls with no branching create 2^n processes."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "What is the main purpose of a parent calling <code>wait()</code> after <code>fork()</code>?",
+    options: [
+      "A) To pause the child process",
+      "B) To collect the child's exit status and remove its zombie entry from the process table",
+      "C) To share memory with the child",
+      "D) To kill the child if it runs too long"
+    ],
+    answer: "B) To collect the child's exit status and remove its zombie entry from the process table",
+    explanation: "wait() blocks the parent until a child exits, then collects its exit status. This cleans up the zombie entry in the process table. Without wait(), terminated children remain as zombies occupying process table slots."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
