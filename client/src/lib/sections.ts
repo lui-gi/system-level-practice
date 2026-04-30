@@ -24,7 +24,7 @@ export const SECTIONS: Section[] = [
   },
   {
     id: "new",
-    title: "New Content",
+    title: "Final Content",
     description: "Material covered after Exam 2. Review topics for the upcoming final.",
     icon: Sparkles,
   },
