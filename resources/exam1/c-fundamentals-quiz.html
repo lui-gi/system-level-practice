@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>C Fundamentals</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Chapter 2</span>
+    <div class="qz-title">C Fundamentals</div>
+    <div class="qz-desc">Week 4 — Identifiers, keywords, data types, variables, <code>main()</code>, <code>printf</code>/<code>scanf</code></div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "Which of the following is a legal C identifier?",
+    options: ["A) 10times", "B) _done", "C) get-next-char", "D) int"],
+    answer: "B) _done",
+    explanation: "Identifiers must begin with a letter or underscore. <code>10times</code> starts with a digit, <code>get-next-char</code> contains hyphens (not allowed), and <code>int</code> is a reserved keyword."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Which of the following is a C keyword (cannot be used as an identifier)?",
+    options: ["A) total", "B) count", "C) struct", "D) value"],
+    answer: "C) struct",
+    explanation: "<code>struct</code> is a reserved keyword in C used to define structure types. Keywords cannot be used as variable or function names."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "What return value from <code>main()</code> indicates normal program termination?",
+    options: ["A) 0", "B) 1", "C) -1", "D) 255"],
+    answer: "A) 0",
+    explanation: "By convention, <code>return 0;</code> from <code>main()</code> signals the OS that the program ended successfully. Any non-zero value typically signals an error."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "Which is the correct way to declare and initialize an integer variable?",
+    options: ["A) integer x = 5;", "B) int x = 5;", "C) var x = 5;", "D) int x : 5;"],
+    answer: "B) int x = 5;",
+    explanation: "In C, integer variables are declared with the keyword <code>int</code>. <code>integer</code> and <code>var</code> are not C types, and <code>:</code> is not the assignment operator."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "Which data type stores a single character in C?",
+    options: ["A) char", "B) string", "C) byte", "D) letter"],
+    answer: "A) char",
+    explanation: "<code>char</code> is the C data type for a single character. C has no built-in <code>string</code> type (strings are char arrays); <code>byte</code> and <code>letter</code> are not C types."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "What is the result of <code>int x = 7 / 2;</code> in C?",
+    options: ["A) 3.5", "B) 3", "C) 4", "D) 2"],
+    answer: "B) 3",
+    explanation: "When both operands are integers, C performs integer division: the fractional part is truncated. 7 / 2 = 3 (not 3.5)."
+  },
+  {
+    id: 7,
+    type: "trace",
+    prompt: "What does C print? (Enter just the number)",
+    code: "int x = 2;\nprintf(\"%d\", ++x * 5);",
+    answer: "15",
+    explanation: "Pre-increment <code>++x</code> increments x to 3 before the multiplication. So the expression evaluates to 3 * 5 = 15."
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "C identifiers are:",
+    options: [
+      "A) Case-insensitive",
+      "B) Case-sensitive (`job` and `Job` are different identifiers)",
+      "C) Limited to 8 characters",
+      "D) Must start with a digit"
+    ],
+    answer: "B) Case-sensitive (`job` and `Job` are different identifiers)",
+    explanation: "C is case-sensitive. <code>job</code>, <code>Job</code>, <code>JOB</code>, and <code>jOB</code> are all distinct identifiers."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "Which printf format specifier prints a float with 2 decimal places?",
+    options: ["A) %d", "B) %.2f", "C) %2f", "D) %f.2"],
+    answer: "B) %.2f",
+    explanation: "The precision modifier <code>.2</code> placed before <code>f</code> limits output to 2 decimal places. <code>%d</code> is for integers; <code>%2f</code> sets field width, not decimal precision; <code>%f.2</code> is not valid syntax."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "What does <code>scanf(\"%d\", &x)</code> require as its second argument?",
+    options: [
+      "A) The value of x",
+      "B) The address of x (i.e., &x)",
+      "C) A string",
+      "D) A pointer to a pointer"
+    ],
+    answer: "B) The address of x (i.e., &x)",
+    explanation: "<code>scanf</code> needs the memory address of the variable so it can write the input value into it. Passing the value of x (without <code>&</code>) is a common bug that causes undefined behavior."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
