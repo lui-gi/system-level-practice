@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fork() Visualizer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Courier New', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    #header {
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    #header-left { display: flex; align-items: baseline; gap: 12px; }
+    #header-left h1 { font-size: 15px; color: #f1f5f9; }
+    #step-counter { color: #64748b; font-size: 12px; }
+    #controls { display: flex; gap: 10px; }
+
+    button {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 16px;
+      cursor: pointer;
+    }
+    #btn-reset { background: #334155; color: #94a3b8; }
+    #btn-reset:hover { background: #475569; }
+    #btn-next { background: #1d4ed8; color: #fff; font-weight: bold; }
+    #btn-next:hover:not(:disabled) { background: #2563eb; }
+    #btn-next:disabled { background: #1e293b; color: #475569; cursor: not-allowed; }
+
+    /* ── Canvas ── */
+    #canvas {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+    }
+
+    /* SVG arrow overlay — large enough to cover any layout */
+    #arrow-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3000px;
+      height: 3000px;
+      pointer-events: none;
+    }
+
+    /* ── Process windows ── */
+    .process-window {
+      position: absolute;
+      width: 190px;
+      background: #1e293b;
+      border-radius: 6px;
+      z-index: 1;
+    }
+    .process-window.is-original { border: 1.5px solid #334155; }
+    .process-window.is-child    { border: 1.5px solid #10b981; }
+
+    .process-title {
+      padding: 6px 10px;
+      border-radius: 5px 5px 0 0;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .is-original .process-title { background: #1d4ed8; color: #bfdbfe; }
+    .is-child    .process-title { background: #065f46; color: #6ee7b7; }
+
+    .process-body { padding: 8px 10px; }
+
+    .code-line {
+      font-size: 11px;
+      padding: 3px 5px;
+      border-radius: 3px;
+      line-height: 1.5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .code-line.past    { color: #475569; }
+    .code-line.current { background: #1e40af; color: #f1f5f9; }
+    .code-line.future  { color: #94a3b8; }
+
+    /* ── Footer ── */
+    #footer {
+      background: #1e293b;
+      border-top: 1px solid #334155;
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    #disclaimer { color: #f59e0b; font-size: 11px; }
+    #process-count { color: #64748b; font-size: 11px; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-left">
+    <h1>fork() Visualizer</h1>
+    <span id="step-counter">Step 0 of 5</span>
+  </div>
+  <div id="controls">
+    <button id="btn-reset" onclick="reset()">↺ Reset</button>
+    <button id="btn-next"  onclick="step()">Next →</button>
+  </div>
+</div>
+
+<div id="canvas">
+  <svg id="arrow-svg">
+    <defs>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#f59e0b"/>
+      </marker>
+    </defs>
+  </svg>
+</div>
+
+<div id="footer">
+  <span id="disclaimer">⚠ Execution order shown is illustrative — real OS scheduling is nondeterministic</span>
+  <span id="process-count">1 process alive</span>
+</div>
+
+<script>
+  const CODE_LINES = [
+    { text: 'printf("Start");',        type: 'print' },
+    { text: 'fork();',                 type: 'fork'  },
+    { text: 'printf("After fork 1");', type: 'print' },
+    { text: 'fork();',                 type: 'fork'  },
+    { text: 'printf("After fork 2");', type: 'print' },
+  ];
+
+  const TOTAL_STEPS = CODE_LINES.length;
+  const WIN_W = 190;
+  const H_GAP = 30;   // horizontal gap between parent and child column
+  const V_GAP = 20;   // vertical gap between siblings
+
+  const canvas   = document.getElementById('canvas');
+  const svg      = document.getElementById('arrow-svg');
+  const stepEl   = document.getElementById('step-counter');
+  const countEl  = document.getElementById('process-count');
+  const nextBtn  = document.getElementById('btn-next');
+
+  let processes   = [];
+  let nextPid     = 101;
+  let currentStep = 0;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function winHeight() {
+    // title bar (28px) + body padding (16px) + lines
+    return 28 + 16 + CODE_LINES.length * 24;
+  }
+
+  function getForkLabel(lineIndex) {
+    let n = 0;
+    for (let i = 0; i <= lineIndex; i++) {
+      if (CODE_LINES[i].type === 'fork') n++;
+    }
+    return `fork #${n}`;
+  }
+
+  function createProcessWindow(pid, isChild, x, y) {
+    const win = document.createElement('div');
+    win.className = 'process-window ' + (isChild ? 'is-child' : 'is-original');
+    win.style.left = x + 'px';
+    win.style.top  = y + 'px';
+
+    const title = document.createElement('div');
+    title.className = 'process-title';
+    title.textContent = isChild ? `PID ${pid}  (child)` : `PID ${pid}`;
+    win.appendChild(title);
+
+    const body = document.createElement('div');
+    body.className = 'process-body';
+    CODE_LINES.forEach(line => {
+      const div = document.createElement('div');
+      div.className = 'code-line future';
+      div.textContent = line.text;
+      body.appendChild(div);
+    });
+    win.appendChild(body);
+
+    canvas.appendChild(win);
+    return win;
+  }
+
+  function updateHighlights(proc) {
+    const lines = proc.element.querySelectorAll('.code-line');
+    lines.forEach((el, i) => {
+      el.className = 'code-line ' + (
+        i < proc.currentLine  ? 'past'    :
+        i === proc.currentLine ? 'current' : 'future'
+      );
+    });
+  }
+
+  function childPosition(parentEl, siblingIndex) {
+    const px = parseInt(parentEl.style.left);
+    const py = parseInt(parentEl.style.top);
+    return {
+      x: px + WIN_W + H_GAP,
+      y: py + siblingIndex * (winHeight() + V_GAP),
+    };
+  }
+
+  function drawArrow(parentEl, childEl, label) {
+    const px = parseInt(parentEl.style.left);
+    const py = parseInt(parentEl.style.top);
+    const ph = winHeight();
+
+    const cx = parseInt(childEl.style.left);
+    const cy = parseInt(childEl.style.top);
+    const ch = winHeight();
+
+    const x1 = px + WIN_W;         // right edge of parent, mid-height
+    const y1 = py + ph / 2;
+    const x2 = cx;                  // left edge of child, mid-height
+    const y2 = cy + ch / 2;
+
+    const dx = Math.abs(x2 - x1);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d',
+      `M ${x1} ${y1} C ${x1 + dx * 0.5} ${y1}, ${x2 - dx * 0.3} ${y2}, ${x2} ${y2}`
+    );
+    path.setAttribute('stroke', '#f59e0b');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('marker-end', 'url(#arrowhead)');
+
+    const lx = (x1 + x2) / 2;
+    const ly = Math.min(y1, y2) - 8;
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', lx);
+    text.setAttribute('y', ly < 12 ? (y1 + y2) / 2 - 8 : ly);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#f59e0b');
+    text.setAttribute('font-size', '10');
+    text.setAttribute('font-family', 'monospace');
+    text.textContent = label;
+
+    svg.appendChild(path);
+    svg.appendChild(text);
+  }
+
+  function updateUI() {
+    stepEl.textContent = currentStep >= TOTAL_STEPS
+      ? `Step ${TOTAL_STEPS} of ${TOTAL_STEPS} — All processes complete`
+      : `Step ${currentStep} of ${TOTAL_STEPS}`;
+    nextBtn.disabled = currentStep >= TOTAL_STEPS;
+    const n = processes.length;
+    countEl.textContent = `${n} process${n !== 1 ? 'es' : ''} alive`;
+  }
+
+  // ── Core step logic ───────────────────────────────────────────────────────
+
+  function step() {
+    if (currentStep >= TOTAL_STEPS) return;
+
+    const lineIndex = currentStep;
+    const isFork = CODE_LINES[lineIndex].type === 'fork';
+    const label  = isFork ? getForkLabel(lineIndex) : null;
+
+    // Advance all live processes to this line
+    processes.forEach(proc => {
+      proc.currentLine = lineIndex;
+      updateHighlights(proc);
+    });
+
+    // Spawn children for every process that just hit a fork line
+    if (isFork) {
+      const parents = [...processes]; // snapshot before we add children
+      parents.forEach(parentProc => {
+        const siblingIndex = parentProc.spawnCount;
+        parentProc.spawnCount++;
+
+        const pid = nextPid++;
+        const { x, y } = childPosition(parentProc.element, siblingIndex);
+        const el = createProcessWindow(pid, true, x, y);
+
+        const childProc = {
+          pid,
+          parentPid: parentProc.pid,
+          currentLine: lineIndex,
+          spawnCount: 0,
+          element: el,
+        };
+        updateHighlights(childProc);
+        processes.push(childProc);
+
+        drawArrow(parentProc.element, el, label);
+      });
+    }
+
+    currentStep++;
+    updateUI();
+  }
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
+
+  function reset() {
+    canvas.querySelectorAll('.process-window').forEach(el => el.remove());
+    // Remove all SVG children except <defs>
+    Array.from(svg.children).forEach(child => {
+      if (child.tagName !== 'defs') child.remove();
+    });
+
+    processes  = [];
+    nextPid    = 101;
+    currentStep = 0;
+
+    const el = createProcessWindow(100, false, 30, 30);
+    processes.push({ pid: 100, parentPid: null, currentLine: -1, spawnCount: 0, element: el });
+
+    updateUI();
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  reset();
+</script>
+</body>
+</html>
