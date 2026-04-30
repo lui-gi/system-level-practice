@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dynamic Memory Allocation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Chapter 17</span>
+    <div class="qz-title">Dynamic Memory Allocation</div>
+    <div class="qz-desc"><code>malloc</code>, <code>calloc</code>, <code>realloc</code>, <code>free</code>, memory leaks, linked lists</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "<code>malloc</code> returns <code>NULL</code> when:",
+    options: [
+      "A) The memory is zero-initialized",
+      "B) Memory allocation fails (heap exhausted)",
+      "C) size argument is 0",
+      "D) The pointer was already declared"
+    ],
+    answer: "B) Memory allocation fails (heap exhausted)",
+    explanation: "malloc returns NULL when it cannot allocate the requested memory, typically because the heap is exhausted. Always check the return value before using the pointer."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Which call correctly allocates memory for an array of 10 <code>int</code>s?",
+    options: [
+      "A) malloc(10)",
+      "B) malloc(10 * sizeof(int))",
+      "C) calloc(10)",
+      "D) malloc(sizeof(int))"
+    ],
+    answer: "B) malloc(10 * sizeof(int))",
+    explanation: "Each int occupies sizeof(int) bytes (typically 4). To allocate space for 10 ints you need 10 * sizeof(int) bytes. Always use sizeof rather than hardcoding byte counts."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "What is the key difference between <code>malloc</code> and <code>calloc</code>?",
+    options: [
+      "A) calloc takes only one argument",
+      "B) calloc initializes allocated memory to zero; malloc does not",
+      "C) malloc is slower than calloc",
+      "D) There is no difference"
+    ],
+    answer: "B) calloc initializes allocated memory to zero; malloc does not",
+    explanation: "malloc(size) allocates size bytes with uninitialized content. calloc(n, size) allocates n*size bytes and sets every byte to 0. Use calloc when you need zeroed memory."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "After this code runs, what problem exists?",
+    code: "int *p = malloc(100);\nint *q = malloc(100);\np = q;",
+    options: [
+      "A) The first block is freed automatically",
+      "B) Both pointers are now invalid",
+      "C) The first block is leaked — it can never be freed",
+      "D) p and q point to different blocks"
+    ],
+    answer: "C) The first block is leaked — it can never be freed",
+    explanation: "Overwriting p with q's address loses the only reference to the first malloc'd block. That block becomes garbage — inaccessible memory that can't be freed. This is a memory leak."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "To dynamically allocate a string that holds <em>n</em> characters (plus null terminator), you write:",
+    options: [
+      "A) malloc(n)",
+      "B) malloc(n + 1)",
+      "C) malloc(n - 1)",
+      "D) malloc(sizeof(char *))"
+    ],
+    answer: "B) malloc(n + 1)",
+    explanation: "A C string of n characters requires n+1 bytes because the null terminator '\\0' must be stored after the last character."
+  },
+  {
+    id: 6,
+    type: "trace",
+    prompt: "What does this program print? (Enter numbers separated by spaces)",
+    code: "#include &lt;stdlib.h&gt;\n#include &lt;stdio.h&gt;\nint main() {\n    int n = 5, *ptr;\n    ptr = (int*)calloc(n, sizeof(int));\n    for (int i = 0; i &lt; n; i++)\n        printf(\"%d \", ptr[i]);\n    free(ptr);\n    return 0;\n}",
+    answer: "0 0 0 0 0",
+    explanation: "calloc zeroes the allocated memory, so all 5 elements are 0. The output is \"0 0 0 0 0\"."
+  },
+  {
+    id: 7,
+    type: "mcq",
+    prompt: "What is a memory leak?",
+    options: [
+      "A) A pointer that has been freed twice",
+      "B) Memory that was allocated but can no longer be accessed or freed",
+      "C) Reading memory past the end of an array",
+      "D) Dereferencing a NULL pointer"
+    ],
+    answer: "B) Memory that was allocated but can no longer be accessed or freed",
+    explanation: "A memory leak occurs when a program allocates memory (with malloc/calloc) but loses all references to it without calling free. C has no garbage collector, so leaked memory is wasted for the lifetime of the process."
+  },
+  {
+    id: 8,
+    type: "trace",
+    prompt: "How many nodes does this linked list have after the code runs? (Enter just the number)",
+    code: "struct Node { int data; struct Node *next; };\nstruct Node *head = NULL, *cur = NULL, *n;\n\nn = (struct Node*)malloc(sizeof(struct Node));\nn-&gt;data = 10; n-&gt;next = NULL;\nhead = cur = n;\n\nn = (struct Node*)malloc(sizeof(struct Node));\nn-&gt;data = 20; n-&gt;next = NULL;\ncur-&gt;next = n; cur = n;\n\nn = (struct Node*)malloc(sizeof(struct Node));\nn-&gt;data = 30; n-&gt;next = NULL;\ncur-&gt;next = n; cur = n;",
+    answer: "3",
+    explanation: "Three malloc calls create three nodes with data 10, 20, and 30 linked together: head→10→20→30→NULL."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "Why must you use <code>realloc</code>'s return value and NOT write <code>ptr = realloc(ptr, newSize)</code> directly without a temp variable?",
+    options: [
+      "A) realloc always returns NULL",
+      "B) If realloc fails it returns NULL, overwriting ptr and leaking the original block",
+      "C) realloc frees ptr automatically",
+      "D) ptr must be NULL before calling realloc"
+    ],
+    answer: "B) If realloc fails it returns NULL, overwriting ptr and leaking the original block",
+    explanation: "If realloc cannot resize, it returns NULL and leaves the original block intact. Writing ptr = realloc(ptr, n) directly loses ptr on failure. Always use a temp: int *tmp = realloc(ptr, n); if (tmp) ptr = tmp;"
+  },
+  {
+    id: 10,
+    type: "trace",
+    prompt: "What is printed by this traversal? (numbers separated by spaces)",
+    code: "/* list: head-&gt;10-&gt;20-&gt;30-&gt;NULL */\nstruct Node *cur = head;\nwhile (cur != NULL) {\n    printf(\"%d \", cur-&gt;data);\n    cur = cur-&gt;next;\n}",
+    answer: "10 20 30",
+    explanation: "The while loop visits each node starting from head. It prints data then advances cur to the next node until cur is NULL."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
