@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
+import { SECTIONS } from "@/lib/sections";
 
 const navLinks = [
+  ...SECTIONS.map((s) => ({ to: `/${s.id}`, label: s.title.replace(" Content", "") })),
   { to: "/slides", label: "Slides" },
-  { to: "/practice", label: "Practice" },
 ];
 
 export default function Navbar() {
