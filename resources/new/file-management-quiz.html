@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge">Unix Ch. 13</span>
+    <div class="qz-title">File Management</div>
+    <div class="qz-desc">fopen/fclose, file modes, fgets/fputs/fprintf, fread/fwrite, lseek, unlink, hard vs soft links</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "What happens when you call <code>fopen(\"data.txt\", \"w\")</code> on a file that already exists?",
+    options: [
+      "A) Returns NULL — cannot overwrite existing files",
+      "B) Opens for appending at the end",
+      "C) Truncates the file to zero length and opens for writing",
+      "D) Opens for reading only"
+    ],
+    answer: "C) Truncates the file to zero length and opens for writing",
+    explanation: "Mode \"w\" creates the file if it doesn't exist, or truncates (empties) it if it does. Use \"a\" to append without destroying existing content."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "Which <code>fopen</code> mode opens a file for both reading and writing, starting at the beginning, WITHOUT truncating?",
+    options: [
+      "A) \"w+\"",
+      "B) \"r+\"",
+      "C) \"a+\"",
+      "D) \"rw\""
+    ],
+    answer: "B) \"r+\"",
+    explanation: "\"r+\" opens an existing file for reading and writing from the beginning without truncating. \"w+\" truncates first. \"a+\" always writes at the end. \"rw\" is not a valid C mode string."
+  },
+  {
+    id: 3,
+    type: "mcq",
+    prompt: "<code>fread(&amp;num, sizeof(int), 1, rf)</code> returns 1 when:",
+    options: [
+      "A) The file is empty",
+      "B) Exactly one element was successfully read",
+      "C) An error occurred",
+      "D) End-of-file was reached"
+    ],
+    answer: "B) Exactly one element was successfully read",
+    explanation: "fread returns the number of elements (not bytes) successfully read. Returning 1 means one int was read. It returns 0 at EOF or on error."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "The low-level <code>open()</code> flags <code>O_WRONLY | O_CREAT | O_TRUNC</code> are equivalent to which <code>fopen</code> mode?",
+    options: [
+      "A) \"r\"",
+      "B) \"a\"",
+      "C) \"w\"",
+      "D) \"r+\""
+    ],
+    answer: "C) \"w\"",
+    explanation: "O_WRONLY = write only, O_CREAT = create if not exists, O_TRUNC = truncate to zero if exists. Together these match fopen's \"w\" behavior exactly."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "A process calls <code>unlink(\"log.txt\")</code> while it still has the file open. What happens to the data?",
+    options: [
+      "A) Data is deleted immediately",
+      "B) Data remains accessible via the open file descriptor until it is closed",
+      "C) Data is moved to /tmp",
+      "D) unlink fails if the file is open"
+    ],
+    answer: "B) Data remains accessible via the open file descriptor until it is closed",
+    explanation: "unlink removes the directory entry (the name), but the file's data persists as long as any file descriptor referencing it remains open. The data is deleted when the last file descriptor is closed."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "Which statement correctly describes a hard link vs a soft (symbolic) link?",
+    options: [
+      "A) A soft link survives deletion of the original file",
+      "B) A hard link points to the same inode as the original",
+      "C) A hard link can span different filesystems",
+      "D) A soft link has the same inode number as the original"
+    ],
+    answer: "B) A hard link points to the same inode as the original",
+    explanation: "A hard link is another directory entry pointing to the same inode — all hard links are equal, there is no \"original.\" A soft link stores the pathname and becomes dangling if the target is deleted. Only soft links can span filesystems."
+  },
+  {
+    id: 7,
+    type: "trace",
+    prompt: "What is the first line printed? (Enter exactly as it would appear, no trailing newline)",
+    code: `FILE *fp = fopen("test.txt", "r");
+char buff[255];
+fgets(buff, 255, fp);
+printf("%s", buff);
+fclose(fp);
+/* Contents of test.txt:
+   Hello
+   World */`,
+    answer: "Hello",
+    explanation: "fgets reads up to 254 characters or until a newline. It reads \"Hello\\n\" from the file. printf(\"%s\", buff) prints Hello followed by the newline already included in buff."
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "<code>fgets(buf, 255, fp)</code> reads at most how many characters?",
+    options: [
+      "A) 255 characters",
+      "B) 254 characters (reserves 1 byte for '\\0')",
+      "C) 256 characters",
+      "D) Until the first whitespace character"
+    ],
+    answer: "B) 254 characters (reserves 1 byte for '\\0')",
+    explanation: "fgets reads at most n-1 characters (here 254) then appends a null terminator, so the total stored is at most 255 bytes including '\\0'. It also stops at newline, keeping the '\\n' in the buffer."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "After <code>lseek(fd, 5, SEEK_SET)</code>, where does the next <code>read()</code> start?",
+    options: [
+      "A) At the beginning of the file",
+      "B) At byte 5 from the current position",
+      "C) At byte 5 from the start of the file",
+      "D) At the end of the file"
+    ],
+    answer: "C) At byte 5 from the start of the file",
+    explanation: "SEEK_SET sets the file offset relative to the beginning of the file. lseek(fd, 5, SEEK_SET) positions the offset at byte index 5 (0-indexed), so the next read starts at the 6th byte."
+  },
+  {
+    id: 10,
+    type: "mcq",
+    prompt: "Which function writes a string to a <code>FILE*</code> stream and does NOT automatically append a newline?",
+    options: [
+      "A) puts()",
+      "B) fputs()",
+      "C) fputchar()",
+      "D) fprintf() with no format"
+    ],
+    answer: "B) fputs()",
+    explanation: "fputs(str, fp) writes the string to the stream without adding a newline. puts(str) always appends '\\n' to stdout. fprintf(fp, \"%s\", str) also doesn't add a newline unless the format string includes one."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
