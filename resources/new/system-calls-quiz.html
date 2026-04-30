@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>System Calls</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="qz-wrap">
+  <div class="qz-header">
+    <span class="qz-badge badge-syscalls">Unix System Calls</span>
+    <div class="qz-title">System Calls</div>
+    <div class="qz-desc">open / read / write / close, errno, lseek, stat, and file descriptors</div>
+  </div>
+  <div id="quiz-body"></div>
+  <button class="submit-btn" id="submit-btn" onclick="grade()">Submit Quiz</button>
+  <div id="results"></div>
+</div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; }
+  .qz-wrap { font-family: 'Poppins', system-ui, sans-serif; max-width: 720px; color: #171717; }
+  .qz-header { margin-bottom: 1.5rem; }
+  .qz-badge { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: .375rem;
+    display: inline-block; margin-bottom: .4rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .qz-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -.01em; margin: .25rem 0 .4rem; }
+  .qz-desc  { color: #737373; font-size: .875rem; line-height: 1.5; }
+  .q-card { border: 1px solid #e5e5e5; border-radius: .375rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .q-type { font-size: .6rem; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; padding: .15rem .5rem; border-radius: .25rem;
+    display: inline-block; margin-bottom: .6rem;
+    background: #f5f5f5; color: #737373; border: 1px solid #e5e5e5; }
+  .q-prompt { margin: .5rem 0 .75rem; font-size: .9rem; line-height: 1.6; }
+  pre { background: #111; color: #e5e5e5; padding: .9rem 1rem;
+    border-radius: .375rem; overflow-x: auto; font-size: .8rem;
+    border-left: 3px solid hsl(173,53%,19%); margin: .75rem 0; white-space: pre; }
+  .mcq-opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .mcq-btn { padding: .375rem .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; background: #fff; cursor: pointer; color: #171717;
+    font-size: .875rem; font-family: 'Poppins', sans-serif; transition: all .15s; }
+  .mcq-btn:hover:not(:disabled) { border-color: hsl(173,53%,19%); background: #f5f5f5; }
+  .mcq-btn.selected { border-color: hsl(173,53%,19%); background: hsl(173,30%,94%); font-weight: 500; }
+  .mcq-btn:disabled { cursor: default; }
+  .mcq-btn.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
+  .mcq-btn.wrong   { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .trace-input { width: 100%; margin-top: .5rem; padding: .5rem;
+    font-family: 'Poppins', monospace; font-size: .875rem; border: 1.5px solid #e5e5e5;
+    border-radius: .375rem; resize: vertical; min-height: 60px; color: #171717; }
+  .trace-input:focus { outline: none; border-color: hsl(173,53%,19%); }
+  .trace-input:disabled { background: #f9fafb; }
+  .submit-btn { display: block; margin: 1.5rem auto; padding: .5rem 2rem;
+    background: hsl(173,53%,19%); color: #fafafa; border: none; border-radius: .375rem;
+    font-size: .875rem; font-weight: 500; font-family: 'Poppins', sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  .submit-btn:hover { opacity: .88; }
+  .submit-btn:disabled { opacity: .45; cursor: default; }
+  #results { display: none; border-top: 1px solid #e5e5e5; padding-top: 1.25rem; margin-top: 1rem; }
+  .score-head { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+  .r-row { padding: .6rem .75rem; border-radius: .375rem; margin-bottom: .5rem; font-size: .875rem; }
+  .r-correct { background: #dcfce7; color: #166534; }
+  .r-wrong   { background: #fee2e2; color: #991b1b; }
+  .r-exp { font-size: .8rem; margin-top: .25rem; opacity: .85; }
+</style>
+
+<script>
+const questions = [
+  {
+    id: 1,
+    type: "mcq",
+    prompt: "What does <code>open()</code> return on success?",
+    options: [
+      "A) A FILE* pointer",
+      "B) A non-negative file descriptor integer",
+      "C) 1",
+      "D) The file size in bytes"
+    ],
+    answer: "B) A non-negative file descriptor integer",
+    explanation: "<code>open()</code> is a POSIX system call that returns a file descriptor — a small non-negative integer the kernel uses to track the open file. On failure it returns -1 and sets <code>errno</code>."
+  },
+  {
+    id: 2,
+    type: "mcq",
+    prompt: "When you open a new process, which file descriptors are already open by default?",
+    options: [
+      "A) None — you must open everything explicitly",
+      "B) 0 (stdin), 1 (stdout), and 2 (stderr)",
+      "C) 0 (stdin) only",
+      "D) 1 (stdout) and 2 (stderr) only"
+    ],
+    answer: "B) 0 (stdin), 1 (stdout), and 2 (stderr)",
+    explanation: "Every process inherits three open file descriptors from the shell: 0 = stdin, 1 = stdout, 2 = stderr. The first file you open will therefore receive file descriptor 3."
+  },
+  {
+    id: 3,
+    type: "trace",
+    prompt: "What integer does <code>read()</code> return when it reaches end-of-file? (Enter just the number)",
+    answer: "0",
+    explanation: "<code>read()</code> returns the number of bytes actually read. When there is nothing left to read (EOF), it returns 0. A return value of -1 indicates an error."
+  },
+  {
+    id: 4,
+    type: "mcq",
+    prompt: "Which global variable is set by the OS when a system call fails?",
+    options: [
+      "A) stderr",
+      "B) errno",
+      "C) NULL",
+      "D) error_code"
+    ],
+    answer: "B) errno",
+    explanation: "<code>errno</code> is a global integer defined in <code>&lt;errno.h&gt;</code>. When a system call fails, the OS sets <code>errno</code> to a symbolic constant (e.g., <code>ENOENT</code>, <code>EACCES</code>) that describes the error."
+  },
+  {
+    id: 5,
+    type: "mcq",
+    prompt: "What does <code>perror(\"open\")</code> print when <code>errno == ENOENT</code>?",
+    options: [
+      "A) open: success",
+      "B) open: No such file or directory",
+      "C) Error 2",
+      "D) ENOENT: open"
+    ],
+    answer: "B) open: No such file or directory",
+    explanation: "<code>perror(str)</code> prints <em>str</em> followed by a colon and the human-readable description of the current <code>errno</code> value to stderr. ENOENT means 'No such file or directory'."
+  },
+  {
+    id: 6,
+    type: "mcq",
+    prompt: "What is the key difference between <code>write()</code> and <code>fwrite()</code>?",
+    options: [
+      "A) write() is buffered; fwrite() is unbuffered",
+      "B) write() is a POSIX system call (unbuffered); fwrite() is a C library function (buffered)",
+      "C) They are identical — fwrite() just calls write() internally",
+      "D) fwrite() works only on binary files"
+    ],
+    answer: "B) write() is a POSIX system call (unbuffered); fwrite() is a C library function (buffered)",
+    explanation: "<code>write()</code> goes directly to the kernel — each call is a system call. <code>fwrite()</code> is part of the C standard I/O library and uses an internal buffer; it may batch multiple writes before issuing a single <code>write()</code> system call."
+  },
+  {
+    id: 7,
+    type: "mcq",
+    prompt: "Which flag combination passed to <code>open()</code> creates a new file (or truncates an existing one) for writing only?",
+    options: [
+      "A) O_RDONLY",
+      "B) O_RDWR | O_APPEND",
+      "C) O_WRONLY | O_CREAT | O_TRUNC",
+      "D) O_CREAT only"
+    ],
+    answer: "C) O_WRONLY | O_CREAT | O_TRUNC",
+    explanation: "<code>O_WRONLY</code> opens for writing, <code>O_CREAT</code> creates the file if it doesn't exist (requires a mode argument), and <code>O_TRUNC</code> truncates an existing file to zero length. Together they replicate the behaviour of <code>fopen(path, \"w\")</code>."
+  },
+  {
+    id: 8,
+    type: "mcq",
+    prompt: "What does <code>lseek(fd, 0, SEEK_END)</code> do?",
+    options: [
+      "A) Rewinds the file to the beginning",
+      "B) Moves the file offset to the end of the file and returns the file size",
+      "C) Deletes everything after the current position",
+      "D) Sets the file size to 0"
+    ],
+    answer: "B) Moves the file offset to the end of the file and returns the file size",
+    explanation: "<code>lseek(fd, offset, SEEK_END)</code> sets the file offset to (file_size + offset). With offset=0 it moves to the very end. The return value is the resulting byte offset from the start, which equals the file size — a common idiom for finding file size."
+  },
+  {
+    id: 9,
+    type: "mcq",
+    prompt: "What information does the <code>stat()</code> system call provide?",
+    options: [
+      "A) The file contents",
+      "B) File metadata: size, permissions, inode, timestamps, link count",
+      "C) The current file offset",
+      "D) The process that last opened the file"
+    ],
+    answer: "B) File metadata: size, permissions, inode, timestamps, link count",
+    explanation: "<code>stat(path, &sb)</code> fills a <code>struct stat</code> with metadata about a file: size (<code>st_size</code>), permissions (<code>st_mode</code>), inode number (<code>st_ino</code>), timestamps (<code>st_mtime</code> etc.), and hard link count (<code>st_nlink</code>). It does NOT read file contents."
+  },
+  {
+    id: 10,
+    type: "trace",
+    prompt: "What value does <code>close(fd)</code> return on success? (Enter just the number)",
+    answer: "0",
+    explanation: "<code>close()</code> returns 0 on success and -1 on error. Always check its return value — errors during close (e.g., on NFS) can silently lose data if ignored."
+  }
+];
+
+const container = document.getElementById("quiz-body");
+questions.forEach((q, i) => {
+  const card = document.createElement("div");
+  card.className = "q-card";
+  card.innerHTML = `
+    <span class="q-type type-${q.type}">${q.type}</span>
+    <p class="q-prompt"><strong>Q${i+1}.</strong> ${q.prompt}</p>
+    ${q.code ? `<pre>${q.code}</pre>` : ""}
+    <div id="input-${q.id}"></div>`;
+  container.appendChild(card);
+
+  const inputArea = document.getElementById(`input-${q.id}`);
+  if (q.type === "mcq") {
+    const wrap = document.createElement("div");
+    wrap.className = "mcq-opts";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mcq-btn";
+      btn.textContent = opt;
+      btn.onclick = () => {
+        wrap.querySelectorAll(".mcq-btn").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+      };
+      wrap.appendChild(btn);
+    });
+    inputArea.appendChild(wrap);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.className = "trace-input";
+    ta.id = `ta-${q.id}`;
+    ta.placeholder = "Type the output or value…";
+    inputArea.appendChild(ta);
+  }
+});
+
+function grade() {
+  let correct = 0;
+  const rows = [];
+  questions.forEach((q, i) => {
+    let userAns = "";
+    if (q.type === "mcq") {
+      const sel = document.querySelector(`#input-${q.id} .mcq-btn.selected`);
+      userAns = sel ? sel.textContent.trim() : "";
+      document.querySelectorAll(`#input-${q.id} .mcq-btn`).forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent.trim() === q.answer) btn.classList.add("correct");
+        else if (btn.classList.contains("selected")) btn.classList.add("wrong");
+      });
+    } else {
+      const ta = document.getElementById(`ta-${q.id}`);
+      userAns = ta ? ta.value.trim() : "";
+      ta.disabled = true;
+    }
+    const ok = userAns === q.answer;
+    if (ok) correct++;
+    rows.push({ q, i, ok, userAns });
+  });
+
+  const res = document.getElementById("results");
+  res.style.display = "block";
+  const pct = Math.round(correct / questions.length * 100);
+  res.innerHTML = `
+    <div class="score-head">Score: ${correct} / ${questions.length} (${pct}%)</div>
+    ${rows.map(({q, i, ok, userAns}) => `
+      <div class="r-row ${ok ? "r-correct" : "r-wrong"}">
+        ${ok ? "✓" : "✗"} <strong>Q${i+1}</strong>
+        ${ok ? "— Correct" : `— Your answer: <code>${userAns || "(none)"}</code> &nbsp;|&nbsp; Expected: <code>${q.answer}</code>`}
+        ${!ok ? `<div class="r-exp">${q.explanation}</div>` : ""}
+      </div>`).join("")}`;
+  document.getElementById("submit-btn").disabled = true;
+}
+</script>
+</body>
+</html>
