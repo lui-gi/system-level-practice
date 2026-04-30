@@ -16,10 +16,16 @@ export default function SectionPage() {
 
   useEffect(() => {
     if (section && !id) {
-      fetch(`/api/sections/${section}`)
+      const controller = new AbortController();
+      fetch(`/api/sections/${section}`, { signal: controller.signal })
         .then((r) => r.json())
         .then((data) => setResources(data.resources ?? []))
-        .catch(() => setError("Failed to load resources."));
+        .catch((err) => {
+          if (err.name !== "AbortError") {
+            setError("Failed to load resources.");
+          }
+        });
+      return () => controller.abort();
     }
   }, [section, id]);
 
